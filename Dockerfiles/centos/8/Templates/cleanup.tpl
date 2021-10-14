@@ -1,0 +1,1 @@
+../../../../Templates/yum-cleanup.tpl

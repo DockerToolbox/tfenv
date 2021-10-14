@@ -1,0 +1,151 @@
+name: pipeline
+on: 
+  push:
+  pull_request:
+  schedule:
+    - cron:  '0 3 * * *'
+    
+jobs:
+  alpine:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version: [ '3.11', '3.12', '3.13', '3.14' ]
+    name: Build on Alpine Linux ${{ matrix.version }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Docker
+        uses: docker-practice/actions-setup-docker@master
+      - name: Generate Dockerfile for Alpine Linux ${{ matrix.version }}
+        run: Dockerfiles/alpine/${{ matrix.version }}/manage.sh generate
+      - name: Build on Alpine Linux ${{ matrix.version }}
+        run: Dockerfiles/alpine/${{ matrix.version }}/manage.sh build clean
+      - name: Login to Docker Hub
+        run: echo ${{secrets.DOCKERHUB_PASSWORD}} | docker login --username ${{secrets.DOCKERHUB_USERNAME}} --password-stdin
+      - name: Publish Container
+        run: Dockerfiles/alpine/${{ matrix.version }}/manage.sh publish
+  amazonlinux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version: [ '1', '2' ]
+    name: Build on Amazon Linux ${{ matrix.version }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Docker
+        uses: docker-practice/actions-setup-docker@master
+      - name: Generate Dockerfile for Amazon Linux ${{ matrix.version }}
+        run:  Dockerfiles/amazonlinux/${{ matrix.version }}/manage.sh generate
+      - name: Build on Amazon Linux ${{ matrix.version }}
+        run: Dockerfiles/amazonlinux/${{ matrix.version }}/manage.sh build clean
+      - name: Login to Docker Hub
+        run: echo ${{secrets.DOCKERHUB_PASSWORD}} | docker login --username ${{secrets.DOCKERHUB_USERNAME}} --password-stdin
+      - name: Publish Container
+        run: Dockerfiles/amazonlinux/${{ matrix.version }}/manage.sh publish
+  centos:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version: [ '7', '8' ]
+    name: Build on Centos ${{ matrix.version }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Docker
+        uses: docker-practice/actions-setup-docker@master
+      - name: Generate Dockerfile for Centos ${{ matrix.version }}
+        run: Dockerfiles/centos/${{ matrix.version }}/manage.sh generate
+      - name: Build on Centos ${{ matrix.version }}
+        run: Dockerfiles/centos/${{ matrix.version }}/manage.sh build clean
+      - name: Login to Docker Hub
+        run: echo ${{secrets.DOCKERHUB_PASSWORD}} | docker login --username ${{secrets.DOCKERHUB_USERNAME}} --password-stdin
+      - name: Publish Container
+        run: Dockerfiles/centos/${{ matrix.version }}/manage.sh publish
+  debian:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version: [ '9', '9-slim', '10', '10-slim', '11', '11-slim', '12', '12-slim' ]
+    name: Build on Debian ${{ matrix.version }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Docker
+        uses: docker-practice/actions-setup-docker@master
+      - name: Generate Dockerfile for Debian ${{ matrix.version }}
+        run: Dockerfiles/debian/${{ matrix.version }}/manage.sh generate
+      - name: Build on Debian ${{ matrix.version }}
+        run: Dockerfiles/debian/${{ matrix.version }}/manage.sh build clean
+      - name: Login to Docker Hub
+        run: echo ${{secrets.DOCKERHUB_PASSWORD}} | docker login --username ${{secrets.DOCKERHUB_USERNAME}} --password-stdin
+      - name: Publish Container
+        run: Dockerfiles/debian/${{ matrix.version }}/manage.sh publish
+  ubuntu:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version: [ '14.04', '16.04', '18.04', '20.04' ]
+    name: Build on Ubuntu ${{ matrix.version }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Docker
+        uses: docker-practice/actions-setup-docker@master
+      - name: Generate Dockerfile for Ubuntu ${{ matrix.version }}
+        run: Dockerfiles/ubuntu/${{ matrix.version }}/manage.sh generate
+      - name: Build on Ubuntu ${{ matrix.version }}
+        run: Dockerfiles/ubuntu/${{ matrix.version }}/manage.sh build clean
+      - name: Login to Docker Hub
+        run: echo ${{secrets.DOCKERHUB_PASSWORD}} | docker login --username ${{secrets.DOCKERHUB_USERNAME}} --password-stdin
+      - name: Publish Container
+        run: Dockerfiles/ubuntu/${{ matrix.version }}/manage.sh publish
+  awesomebot:
+    name: Awesomebot
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Ruby 3.0
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.0
+      - name: Run Awesomebot
+        env:
+          FLAGS: "default"
+          EXCLUDE_FILES: "CHANGELOG.md"
+          WHITELIST: "https://img.shields.io"
+        run: bash <(curl -s https://raw.githubusercontent.com/CICDToolbox/awesomebot/master/pipeline.sh)
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run Shellcheck
+        run: bash <(curl -s https://raw.githubusercontent.com/CICDToolbox/shellcheck/master/pipeline.sh)
+  yaml-lint:
+    name: YAML Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Ruby 3.0
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.0
+      - name: Run YAML-Lint
+        run: bash <(curl -s https://raw.githubusercontent.com/CICDToolbox/yaml-lint/master/pipeline.sh)
+  slack-workflow-status:
+    if: always()
+    name: Slack Post Workflow Notification
+    needs:
+      - alpine
+      - amazonlinux
+      - centos
+      - debian
+      - ubuntu
+      - awesomebot
+      - shellcheck
+      - yaml-lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Slack Post Workflow Notification
+        uses: Gamesight/slack-workflow-status@master
+        with:
+          include_jobs: true
+          repo_token: ${{secrets.GITHUB_TOKEN}}
+          slack_webhook_url: ${{secrets.SLACK_WEBHOOK_URL}}

@@ -19,10 +19,45 @@ function setup()
     LOCAL_CONTAINER_NAME="${CONTAINER_TMP//.}"
     PUBLISHED_CONTAINER_NAME="${DOCKER_HUB_ORG}/${CONTAINER_PREFIX}-${CONTAINER_OS_NAME}"
 
+    if [[ "${CONTAINER_OS_NAME}" == "debian" ]]; then
+        case "${CONTAINER_OS_VERSION_RAW}" in
+            9)
+                CONTAINER_OS_VERSION_ALT="stretch"
+                ;;
+            9-slim)
+                CONTAINER_OS_VERSION_ALT="stretch-slim"
+                ;;
+            10)
+                CONTAINER_OS_VERSION_ALT="buster"
+                ;;
+            10-slim)
+                CONTAINER_OS_VERSION_ALT="buster-slim"
+                ;;
+            11)
+                CONTAINER_OS_VERSION_ALT="bullseye"
+                ;;
+            11-slim)
+                CONTAINER_OS_VERSION_ALT="bullseye-slim"
+                ;;
+            12)
+                CONTAINER_OS_VERSION_ALT="bookworm"
+                ;;
+            12-slim)
+                CONTAINER_OS_VERSION_ALT="bookworm-slim"
+                ;;
+            *)
+                echo "${fgRed}${bold}Unknown debian version ${CONTAINER_OS_VERSION_RAW} - update utils.sh - aborting${reset}"
+                exit
+        esac
+    else
+        CONTAINER_OS_VERSION_ALT=$CONTAINER_OS_VERSION_RAW
+    fi
+
     export PUBLISHED_CONTAINER_NAME
     export LOCAL_CONTAINER_NAME
     export CONTAINER_OS_VERSION_RAW
     export CONTAINER_OS_VERSION
+    export CONTAINER_OS_VERSION_ALT
 }
 
 function manage_container()
@@ -31,15 +66,28 @@ function manage_container()
     clean="${2:-}"
     tags="${3:-}"
 
-    if [[ "${type}" != "publish" ]]; then
-        build_container "${clean}"
-    else
-        publish_container "${tags}"
-    fi
+    case "${type}" in
+        generate)
+            generate_container
+            ;;
+        build)
+            build_container "${clean}"
+            ;;
+        scan)
+            scan_container
+            ;;
+        publish)
+            publish_container "${tags}"
+            ;;
+        *)
+            echo "${fgRed}${bold}Unknown option ${type} aborting${reset}"
+            ;;
+    esac
 }
 
 function set_colours()
 {
+    export TERM=xterm
     fgRed=$(tput setaf 1)
     fgGreen=$(tput setaf 2)
     fgYellow=$(tput setaf 3)
@@ -47,6 +95,62 @@ function set_colours()
 
     bold=$(tput bold)
     reset=$(tput sgr0)
+}
+
+function check_template()
+{
+    if [[ ! -f "${1}" ]]; then
+        echo "${fgRed}${bold}${1} is missing aborting Dockerfile generation for ${CONTAINER_OS_NAME}:${CONTAINER_OS_VERSION_ALT}${reset}"
+        exit 1
+    fi
+}
+
+function generate_container()
+{
+    echo "${fgGreen}${bold}Generating new Dockerfile for ${CONTAINER_OS_NAME}:${CONTAINER_OS_VERSION_ALT}${reset}"
+
+    check_template "Templates/install.tpl"
+    check_template "Templates/cleanup.tpl"
+    check_template "Templates/entrypoint.tpl"
+
+    INSTALL=$(<Templates/install.tpl)
+    CLEANUP=$(<Templates/cleanup.tpl)
+    ENTRYPOINT=$(<Templates/entrypoint.tpl)
+
+    REPO_ROOT=$(r=$(git rev-parse --git-dir) && r=$(cd "$r" && pwd)/ && cd "${r%%/.git/*}" && pwd)
+
+    if [[ "${CONTAINER_OS_NAME}" == "alpine" ]]; then
+        CONTAINER_SHELL="ash"
+        CONTAINER_LINT="# hadolint ignore=SC2016,DL3018,DL4006"
+    else
+        CONTAINER_SHELL="bash"
+        CONTAINER_LINT="# hadolint ignore=SC2016"
+    fi
+
+    PACKAGES=$("${REPO_ROOT}"/Scripts/get-versions.sh -g "${REPO_ROOT}"/Scripts/version-grabber.sh -p -c "${REPO_ROOT}/Packages/packages.cfg" -o "${CONTAINER_OS_NAME}" -t "${CONTAINER_OS_VERSION_ALT}" -s "${CONTAINER_SHELL}")
+    if [[ -f "Templates/static-packages.tpl" ]]; then
+        STATIC=$(<Templates/static-packages.tpl)
+        PACKAGES=$(printf "%s\n%s" "${PACKAGES}" "${STATIC}")
+    fi
+
+    if [[ -f "Dockerfile" ]]; then
+        cp Dockerfile Dockerfile.bak
+    fi
+
+    touch Dockerfile
+    cat >Dockerfile <<EOL
+FROM ${CONTAINER_OS_NAME}:${CONTAINER_OS_VERSION_ALT}
+
+${CONTAINER_LINT}
+${PACKAGES}
+${INSTALL}
+${CLEANUP}
+
+${ENTRYPOINT}
+
+EOL
+
+    echo "${fgGreen}${bold}Complete${reset}"
 }
 
 function build_container()
@@ -62,6 +166,13 @@ function build_container()
         docker build --pull -t "${LOCAL_CONTAINER_NAME}" .
         echo "${fgGreen}${bold}Build Complete: ${LOCAL_CONTAINER_NAME}${reset}"
     fi
+}
+
+function scan_container()
+{
+    echo "${fgGreen}${bold}Scanning: ${LOCAL_CONTAINER_NAME}${reset}"
+    docker scan "${LOCAL_CONTAINER_NAME}"
+    echo "${fgGreen}${bold}Scan Complete: ${LOCAL_CONTAINER_NAME}${reset}"
 }
 
 function get_image_id()
@@ -104,5 +215,5 @@ function publish_container()
     echo "${fgGreen}${bold}Publish Complete: ${LOCAL_CONTAINER_NAME}${reset}"
 }
 
-setup
 set_colours
+setup

@@ -60,8 +60,6 @@ We try to offer as many operating system flavours as possible, but we only use c
 | [Ubuntu 18.04 (Bionic Beaver)](Dockerfiles/ubuntu/18.04/Dockerfile) | [wolfsoftwareltd/tfenv-ubuntu](https://hub.docker.com/r/wolfsoftwareltd/tfenv-ubuntu)           | 18.04, bionic               |
 | [Ubuntu 20.04 (Focal Fossa)](Dockerfiles/ubuntu/20.04/Dockerfile)   | [wolfsoftwareltd/tfenv-ubuntu](https://hub.docker.com/r/wolfsoftwareltd/tfenv-ubuntu)           | 20.04, focal, latest        |
 
-> Debian bullseye isn't technically Debian 11 (yet)
-
 ## Naming convention
 
 ### Local containers

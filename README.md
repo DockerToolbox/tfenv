@@ -112,5 +112,5 @@ If you want to publish the containers you will need to update the [utils.sh](Scr
 
 ```
 DOCKER_HUB_ORG='wolfsoftwareltd'
-CONTAINER_PREFIX='rbenv'
+CONTAINER_PREFIX='tfenv'
 ```

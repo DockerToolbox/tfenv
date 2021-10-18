@@ -1,1 +1,0 @@
-../../../../Templates/apk-virtual-packages.tpl

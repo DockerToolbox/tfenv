@@ -7,7 +7,9 @@ This changelog was automatically generated using [Caretaker](https://github.com/
 
 ### [Unreleased](https://github.com/DockerToolbox/tfenv/compare/v0.1.0...HEAD)
 
-- update [`[head]`](https://github.com/DockerToolbox/tfenv/commit/)
+- Update [`[head]`](https://github.com/DockerToolbox/tfenv/commit/)
+
+- update [`[a4c18ac]`](https://github.com/DockerToolbox/tfenv/commit/a4c18acd9aa8b772dcdb54b7f2cd06c0018a8b36)
 
 - first commit [`[a27c172]`](https://github.com/DockerToolbox/tfenv/commit/a27c172592c99d033e5f016ec397bfa371645f85)
 

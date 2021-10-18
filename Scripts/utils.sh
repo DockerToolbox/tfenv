@@ -4,6 +4,8 @@ set -e
 
 DOCKER_HUB_ORG='wolfsoftwareltd'
 CONTAINER_PREFIX='tfenv'
+CONTAINER_PARENT='wolfsoftwareltd/anyenv-'
+CONTAINER_COMMAND='RUN anyenv install tfenv'
 
 function setup()
 {
@@ -97,41 +99,9 @@ function set_colours()
     reset=$(tput sgr0)
 }
 
-function check_template()
-{
-    if [[ ! -f "${1}" ]]; then
-        echo "${fgRed}${bold}${1} is missing aborting Dockerfile generation for ${CONTAINER_OS_NAME}:${CONTAINER_OS_VERSION_ALT}${reset}"
-        exit 1
-    fi
-}
-
 function generate_container()
 {
     echo "${fgGreen}${bold}Generating new Dockerfile for ${CONTAINER_OS_NAME}:${CONTAINER_OS_VERSION_ALT}${reset}"
-
-    check_template "Templates/install.tpl"
-    check_template "Templates/cleanup.tpl"
-    check_template "Templates/entrypoint.tpl"
-
-    INSTALL=$(<Templates/install.tpl)
-    CLEANUP=$(<Templates/cleanup.tpl)
-    ENTRYPOINT=$(<Templates/entrypoint.tpl)
-
-    REPO_ROOT=$(r=$(git rev-parse --git-dir) && r=$(cd "$r" && pwd)/ && cd "${r%%/.git/*}" && pwd)
-
-    if [[ "${CONTAINER_OS_NAME}" == "alpine" ]]; then
-        CONTAINER_SHELL="ash"
-        CONTAINER_LINT="# hadolint ignore=SC2016,DL3018,DL4006"
-    else
-        CONTAINER_SHELL="bash"
-        CONTAINER_LINT="# hadolint ignore=SC2016"
-    fi
-
-    PACKAGES=$("${REPO_ROOT}"/Scripts/get-versions.sh -g "${REPO_ROOT}"/Scripts/version-grabber.sh -p -c "${REPO_ROOT}/Packages/packages.cfg" -o "${CONTAINER_OS_NAME}" -t "${CONTAINER_OS_VERSION_ALT}" -s "${CONTAINER_SHELL}")
-    if [[ -f "Templates/static-packages.tpl" ]]; then
-        STATIC=$(<Templates/static-packages.tpl)
-        PACKAGES=$(printf "%s\n%s" "${PACKAGES}" "${STATIC}")
-    fi
 
     if [[ -f "Dockerfile" ]]; then
         cp Dockerfile Dockerfile.bak
@@ -139,14 +109,13 @@ function generate_container()
 
     touch Dockerfile
     cat >Dockerfile <<EOL
-FROM ${CONTAINER_OS_NAME}:${CONTAINER_OS_VERSION_ALT}
+FROM ${CONTAINER_PARENT}${CONTAINER_OS_NAME}:${CONTAINER_OS_VERSION_ALT}
 
-${CONTAINER_LINT}
-${PACKAGES}
-${INSTALL}
-${CLEANUP}
+${CONTAINER_COMMAND}
 
-${ENTRYPOINT}
+WORKDIR /root
+
+ENTRYPOINT ["/bin/bash"]
 
 EOL
 

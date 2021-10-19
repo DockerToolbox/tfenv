@@ -5,7 +5,6 @@ set -e
 DOCKER_HUB_ORG='wolfsoftwareltd'
 CONTAINER_PREFIX='tfenv'
 CONTAINER_PARENT='wolfsoftwareltd/anyenv-'
-CONTAINER_COMMAND='RUN anyenv install tfenv'
 
 function setup()
 {
@@ -99,9 +98,23 @@ function set_colours()
     reset=$(tput sgr0)
 }
 
+function check_template()
+{
+    if [[ ! -f "${1}" ]]; then
+        echo "${fgRed}${bold}${1} is missing aborting Dockerfile generation for ${CONTAINER_OS_NAME}:${CONTAINER_OS_VERSION_ALT}${reset}"
+        exit 1
+    fi
+}
+
 function generate_container()
 {
     echo "${fgGreen}${bold}Generating new Dockerfile for ${CONTAINER_OS_NAME}:${CONTAINER_OS_VERSION_ALT}${reset}"
+
+    check_template "Templates/install.tpl"
+    check_template "Templates/entrypoint.tpl"
+
+    INSTALL=$(<Templates/install.tpl)
+    ENTRYPOINT=$(<Templates/entrypoint.tpl)
 
     if [[ -f "Dockerfile" ]]; then
         cp Dockerfile Dockerfile.bak
@@ -111,11 +124,9 @@ function generate_container()
     cat >Dockerfile <<EOL
 FROM ${CONTAINER_PARENT}${CONTAINER_OS_NAME}:${CONTAINER_OS_VERSION_ALT}
 
-${CONTAINER_COMMAND}
+${INSTALL}
 
-WORKDIR /root
-
-ENTRYPOINT ["/bin/bash"]
+${ENTRYPOINT}
 
 EOL
 

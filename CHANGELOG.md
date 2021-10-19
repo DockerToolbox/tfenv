@@ -9,6 +9,8 @@ This changelog was automatically generated using [Caretaker](https://github.com/
 
 - Update [`[head]`](https://github.com/DockerToolbox/tfenv/commit/)
 
+- Update [`[7f31dab]`](https://github.com/DockerToolbox/tfenv/commit/7f31dabde51917cfcb84e2af29b861c6ca3dfa77)
+
 - Update [`[bc46587]`](https://github.com/DockerToolbox/tfenv/commit/bc46587826ee294091a27c9cb0affd0784563fce)
 
 - update [`[a4c18ac]`](https://github.com/DockerToolbox/tfenv/commit/a4c18acd9aa8b772dcdb54b7f2cd06c0018a8b36)

@@ -7,7 +7,9 @@ This changelog was automatically generated using [Caretaker](https://github.com/
 
 ### [Unreleased](https://github.com/DockerToolbox/tfenv/compare/v0.1.0...HEAD)
 
-- update [`[head]`](https://github.com/DockerToolbox/tfenv/commit/)
+- Remove centos 8 as no longer supported [`[head]`](https://github.com/DockerToolbox/tfenv/commit/)
+
+- update [`[547a963]`](https://github.com/DockerToolbox/tfenv/commit/547a9639241d294065f13c86c05445ee9b128893)
 
 - update [`[d6523e2]`](https://github.com/DockerToolbox/tfenv/commit/d6523e2b1772bbd461e0dd9411f54002ef859fd1)
 
